@@ -1,3 +1,5 @@
+use aoc_24::AoC24Processor;
+
 fn main() {
-    println!("Hello, world!");
+    AoC24Processor::process();
 }
