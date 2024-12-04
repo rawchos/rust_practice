@@ -2,7 +2,7 @@
 resolver = "2"
 
 members = [
-    "practice_runner"
+    "aoc_runner"
 ]
 
 [workspace.lints.clippy]
