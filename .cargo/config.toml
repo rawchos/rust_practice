@@ -1,0 +1,8 @@
+[alias]
+lint = "clippy --all-targets --all-features"
+
+[build]
+rustflags = ["-D", "warnings"]
+
+[install]
+rustflags = ["-D", "warnings"]

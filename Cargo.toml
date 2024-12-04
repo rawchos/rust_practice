@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "aoc_runner",
+    "aoc_24",
+    "utils"
+]
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
