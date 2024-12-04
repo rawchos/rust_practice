@@ -3,6 +3,10 @@
 version = 3
 
 [[package]]
+name = "aoc_24"
+version = "0.1.0"
+
+[[package]]
 name = "aoc_runner"
 version = "0.1.0"
 
