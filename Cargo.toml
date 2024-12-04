@@ -2,7 +2,8 @@
 resolver = "2"
 
 members = [
-    "aoc_runner"
+    "aoc_runner",
+    "utils"
 ]
 
 [workspace.lints.clippy]
