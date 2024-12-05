@@ -11,5 +11,6 @@ members = [
 unwrap_used = "deny"
 
 [workspace.dependencies]
+itertools = "0.13.0"
 regex = "1.11.1"
 thiserror = "2.0.4"
