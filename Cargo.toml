@@ -9,3 +9,7 @@ members = [
 
 [workspace.lints.clippy]
 unwrap_used = "deny"
+
+[workspace.dependencies]
+regex = "1.11.1"
+thiserror = "2.0.4"
