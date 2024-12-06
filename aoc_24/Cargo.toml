@@ -7,6 +7,7 @@ edition = "2021"
 utils = { path = "../utils" }
 
 itertools = { workspace = true }
+phf = { workspace = true }
 regex = { workspace = true }
 thiserror = { workspace = true }
 
