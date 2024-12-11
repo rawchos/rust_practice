@@ -1,15 +1,18 @@
+use utils::FileReader;
+
 static SAFE_LEVEL_DIFF: [i16; 3] = [1, 2, 3];
 
 pub struct Day02Processor(String);
 
 impl Day02Processor {
     fn new() -> Self {
-        Self(String::from("./resources/aoc_24/sample_data.txt"))
-        // Self(String::from("./resources/aoc_24/day_02.txt"))
+        // Self(String::from("./resources/aoc_24/sample_data.txt"))
+        Self(String::from("./resources/aoc_24/day_02.txt"))
     }
 
     pub fn process(&self) {
-        println!("Running Day02 Stuff for: {}", self.0)
+        // println!("Running Day02 Stuff for: {}", self.0)
+        PartOneProcessor::new(self.0.as_str()).process();
     }
 }
 
@@ -19,7 +22,51 @@ impl Default for Day02Processor {
     }
 }
 
-#[allow(dead_code)]
+struct PartOneProcessor(String);
+
+impl PartOneProcessor {
+    fn new(s: &str) -> Self {
+        Self(s.to_string())
+    }
+
+    fn process(&self) {
+        let file_reader = FileReader::new(&self.0);
+
+        match PartOneValue::try_from(file_reader) {
+            Ok(p1_value) => println!("AoC 24 Day 02 Part 1: {}", p1_value.value()),
+            Err(msg) => println!("AoC 24 Day 02 Part 1: Failed with this message: {}", msg),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct PartOneValue(i16);
+
+impl PartOneValue {
+    fn value(&self) -> i16 {
+        self.0
+    }
+}
+
+impl TryFrom<FileReader> for PartOneValue {
+    type Error = crate::Error;
+
+    fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
+        let reactor_reports = reader
+            .read_lines()?
+            .map_while(Result::ok)
+            .map(ReactorReport::try_from)
+            .collect::<Result<Vec<ReactorReport>, crate::Error>>()?;
+
+        let safe_reports: Vec<ReactorReport> = reactor_reports
+            .into_iter()
+            .filter(|rr| rr.is_safe())
+            .collect();
+
+        Ok(PartOneValue(i16::try_from(safe_reports.len())?))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Level(i16);
 
@@ -29,12 +76,10 @@ struct ReactorReport {
 }
 
 impl ReactorReport {
-    // TODO: Need a way to check increasing, decreasing, unsafe change
-    #[allow(dead_code)]
-    fn safe(&self) -> bool {
-        // let mut increasing = false;
-        // let mut decreasing = false;
+    fn is_safe(&self) -> bool {
         let mut prev = self.levels[0];
+        let mut positives = vec![];
+        let mut negatives = vec![];
 
         for idx in 1..self.levels.len() {
             let current = self.levels[idx];
@@ -43,7 +88,15 @@ impl ReactorReport {
             if !SAFE_LEVEL_DIFF.contains(&diff.abs()) {
                 return false;
             } else {
-                // diffs.push(diff);
+                if diff.is_positive() {
+                    positives.push(diff)
+                } else {
+                    negatives.push(diff)
+                }
+
+                if positives.len() > 0 && negatives.len() > 0 {
+                    return false;
+                }
                 prev = current;
             }
         }
@@ -92,5 +145,40 @@ mod tests {
             reactor_report,
             ReactorReport::try_from("7 6 4 2 1".to_string()).unwrap()
         )
+    }
+
+    #[test]
+    fn report_safely_decreasing() {
+        assert!(ReactorReport::try_from("7 6 4 2 1".to_string())
+            .unwrap()
+            .is_safe())
+    }
+
+    #[test]
+    fn report_safely_increasing() {
+        assert!(ReactorReport::try_from("1 3 6 7 9".to_string())
+            .unwrap()
+            .is_safe())
+    }
+
+    #[test]
+    fn report_unsafe_increase() {
+        assert!(!ReactorReport::try_from("1 2 7 8 9".to_string())
+            .unwrap()
+            .is_safe())
+    }
+
+    #[test]
+    fn report_unsafe_increase_and_decrease() {
+        assert!(!ReactorReport::try_from("1 3 2 4 5".to_string())
+            .unwrap()
+            .is_safe())
+    }
+
+    #[test]
+    fn report_unsafe_no_change_in_level() {
+        assert!(!ReactorReport::try_from("8 6 4 4 1".to_string())
+            .unwrap()
+            .is_safe())
     }
 }
