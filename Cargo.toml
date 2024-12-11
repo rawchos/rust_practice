@@ -12,5 +12,6 @@ unwrap_used = "deny"
 
 [workspace.dependencies]
 itertools = "0.13.0"
+phf = { version = "0.11", features = ["macros"] }
 regex = "1.11.1"
 thiserror = "2.0.4"
