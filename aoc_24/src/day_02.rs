@@ -138,7 +138,7 @@ impl ReactorReport {
                     negatives.push(diff)
                 }
 
-                if positives.len() > 0 && negatives.len() > 0 {
+                if !positives.is_empty() && !negatives.is_empty() {
                     return false;
                 }
                 prev = current;
@@ -149,7 +149,7 @@ impl ReactorReport {
     }
 
     fn is_dampened_safe(&self) -> bool {
-        let is_safe = self.is_safe() || {
+        self.is_safe() || {
             for idx in 0..self.levels.len() {
                 let mut levels = self.levels.clone();
                 levels.remove(idx);
@@ -159,9 +159,7 @@ impl ReactorReport {
                 }
             }
             false
-        };
-
-        is_safe
+        }
     }
 }
 
@@ -170,7 +168,7 @@ impl TryFrom<String> for ReactorReport {
 
     fn try_from(report: String) -> Result<Self, Self::Error> {
         let mut levels = vec![];
-        for level in report.split(" ").into_iter() {
+        for level in report.split(" ") {
             levels.push(Level::try_from(level)?)
         }
 

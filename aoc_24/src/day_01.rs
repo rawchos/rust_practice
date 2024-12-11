@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use regex;
 use std::collections::HashMap;
 use utils::FileReader;
 
