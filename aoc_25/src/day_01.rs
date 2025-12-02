@@ -12,6 +12,7 @@ impl Day01Processor {
 
     pub fn process(&self) {
         PartOneProcessor::new(self.0.as_str()).process();
+        PartTwoProcessor::new(self.0.as_str()).process();
     }
 }
 
@@ -31,17 +32,44 @@ impl PartOneProcessor {
     fn process(&self) {
         let file_reader = FileReader::new(&self.0);
 
-        match BasicPassword::try_from(file_reader) {
-            Ok(password) => println!("AoC 25 Day 01 Part 1: {}", password.get()),
+        match Password::try_from(file_reader) {
+            Ok(password) => println!("AoC 25 Day 01 Part 1: {}", password.landed_on_zero()),
             Err(msg) => println!("AoC 25 Day 01 Part 1: Failed with this message: {}", msg),
         }
     }
 }
 
+struct PartTwoProcessor(String);
+
+impl PartTwoProcessor {
+    fn new(s: &str) -> Self {
+        Self(s.to_string())
+    }
+
+    fn process(&self) {
+        let file_reader = FileReader::new(&self.0);
+
+        match Password::try_from(file_reader) {
+            Ok(password) => println!(
+                "AoC 25 Day 01 Part 2: {}",
+                password.landed_on_zero() + password.zero_clicks()
+            ),
+            Err(msg) => println!("AoC 25 Day 01 Part 2: Failed with this message: {}", msg),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
-enum Rotation {
-    Left(i32),
-    Right(i32),
+enum Direction {
+    Left,
+    Right,
+}
+
+#[derive(Debug, PartialEq)]
+struct Rotation {
+    direction: Direction,
+    distance: i32,
+    full_rotations: i32,
 }
 
 impl TryFrom<String> for Rotation {
@@ -54,15 +82,18 @@ impl TryFrom<String> for Rotation {
             return Err(Self::Error::InvalidInput);
         };
 
-        let distance: i32 = rotation_data["distance"].parse::<i32>()?;
-        let functional_distance = distance % 100;
-        let rotation = if &rotation_data["direction"] == "L" {
-            Self::Left(functional_distance)
+        let full_distance: i32 = rotation_data["distance"].parse::<i32>()?;
+        let direction = if &rotation_data["direction"] == "L" {
+            Direction::Left
         } else {
-            Self::Right(functional_distance)
+            Direction::Right
         };
 
-        Ok(rotation)
+        Ok(Rotation {
+            direction,
+            distance: full_distance % 100,
+            full_rotations: full_distance / 100,
+        })
     }
 }
 
@@ -94,6 +125,7 @@ impl TryFrom<FileReader> for RotationList {
 struct SafeDial {
     current_position: i32,
     zero_counter: i32,
+    zero_clicks: i32,
 }
 
 impl SafeDial {
@@ -101,20 +133,35 @@ impl SafeDial {
         Self {
             current_position: 50,
             zero_counter: 0,
+            zero_clicks: 0,
         }
     }
 
     fn apply_rotation(&mut self, rotation: &Rotation) {
-        let new_position = match rotation {
-            Rotation::Left(distance) => self.current_position - distance,
-            Rotation::Right(distance) => self.current_position + distance,
+        let previous_position = self.current_position;
+
+        let new_position = match rotation.direction {
+            Direction::Left => self.current_position - rotation.distance,
+            Direction::Right => self.current_position + rotation.distance,
         };
 
         match new_position {
-            n if n < 0 => self.current_position = 100 + n,
-            n if n > 99 => self.current_position = n - 100,
+            n if n < 0 => {
+                self.current_position = 100 + n;
+                if self.current_position != 0 && previous_position != 0 {
+                    self.zero_clicks += 1;
+                }
+            }
+            n if n > 99 => {
+                self.current_position = n - 100;
+                if self.current_position != 0 && previous_position != 0 {
+                    self.zero_clicks += 1;
+                }
+            }
             _ => self.current_position = new_position,
         }
+
+        self.zero_clicks += rotation.full_rotations;
 
         if self.current_position == 0 {
             self.zero_counter += 1
@@ -122,32 +169,36 @@ impl SafeDial {
     }
 }
 
-struct BasicPassword(i32);
+struct Password(i32, i32);
 
-impl BasicPassword {
-    fn get(&self) -> i32 {
+impl Password {
+    fn landed_on_zero(&self) -> i32 {
         self.0
+    }
+
+    fn zero_clicks(&self) -> i32 {
+        self.1
     }
 }
 
-impl From<RotationList> for BasicPassword {
+impl From<RotationList> for Password {
     fn from(value: RotationList) -> Self {
         let safe_dial: SafeDial = value.iter().fold(SafeDial::new(), |mut dial, rotation| {
             dial.apply_rotation(rotation);
             dial
         });
 
-        BasicPassword(safe_dial.zero_counter)
+        Password(safe_dial.zero_counter, safe_dial.zero_clicks)
     }
 }
 
-impl TryFrom<FileReader> for BasicPassword {
+impl TryFrom<FileReader> for Password {
     type Error = crate::Error;
 
     fn try_from(value: FileReader) -> Result<Self, Self::Error> {
         let rotations = RotationList::try_from(value)?;
 
-        Ok(BasicPassword::from(rotations))
+        Ok(Password::from(rotations))
     }
 }
 
@@ -159,14 +210,22 @@ mod tests {
 
     #[test]
     fn left_rotation_from_string() {
-        let expected = Rotation::Left(32);
+        let expected = Rotation {
+            direction: Direction::Left,
+            distance: 32,
+            full_rotations: 0,
+        };
 
         assert_eq!(expected, Rotation::try_from(String::from("L32")).unwrap())
     }
 
     #[test]
     fn right_rotation_from_string() {
-        let expected = Rotation::Right(77);
+        let expected = Rotation {
+            direction: Direction::Right,
+            distance: 77,
+            full_rotations: 0,
+        };
 
         assert_eq!(expected, Rotation::try_from(String::from("R77")).unwrap())
     }
@@ -174,16 +233,56 @@ mod tests {
     #[test]
     fn rotation_list_from_reader() {
         let rotations = vec![
-            Rotation::Left(68),
-            Rotation::Left(30),
-            Rotation::Right(48),
-            Rotation::Left(5),
-            Rotation::Right(60),
-            Rotation::Left(55),
-            Rotation::Left(1),
-            Rotation::Left(99),
-            Rotation::Right(14),
-            Rotation::Left(82),
+            Rotation {
+                direction: Direction::Left,
+                distance: 68,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Left,
+                distance: 30,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Right,
+                distance: 48,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Left,
+                distance: 5,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Right,
+                distance: 60,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Left,
+                distance: 55,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Left,
+                distance: 1,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Left,
+                distance: 99,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Right,
+                distance: 14,
+                full_rotations: 0,
+            },
+            Rotation {
+                direction: Direction::Left,
+                distance: 82,
+                full_rotations: 0,
+            },
         ];
         let expected = RotationList(rotations);
         let reader = FileReader::new(SAMPLE_FILE);
@@ -192,17 +291,19 @@ mod tests {
     }
 
     #[test]
-    fn basic_password_from_rotation_list() {
+    fn password_from_rotation_list() {
         let rotations = RotationList::try_from(FileReader::new(SAMPLE_FILE)).unwrap();
-        let password = BasicPassword::from(rotations);
+        let password = Password::from(rotations);
 
-        assert_eq!(3, password.get())
+        assert_eq!(3, password.landed_on_zero());
+        assert_eq!(6, password.landed_on_zero() + password.zero_clicks())
     }
 
     #[test]
-    fn basic_password_from_filereader() {
-        let password = BasicPassword::try_from(FileReader::new(SAMPLE_FILE)).unwrap();
+    fn password_from_filereader() {
+        let password = Password::try_from(FileReader::new(SAMPLE_FILE)).unwrap();
 
-        assert_eq!(3, password.get())
+        assert_eq!(3, password.landed_on_zero());
+        assert_eq!(6, password.landed_on_zero() + password.zero_clicks())
     }
 }
