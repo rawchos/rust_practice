@@ -8,3 +8,4 @@ workspace = true
 
 [dependencies]
 aoc_24 = { path = "../aoc_24" }
+aoc_25 = { path = "../aoc_25" }
