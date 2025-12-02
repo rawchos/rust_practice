@@ -14,7 +14,6 @@ impl Day02Processor {
     }
 
     pub fn process(&self) {
-        // println!("Processing [{}] for day 02", self.0)
         PartOneProcessor::new(self.0.as_str()).process()
     }
 }
@@ -49,7 +48,6 @@ struct ProductRange {
 }
 
 impl ProductRange {
-    #[allow(dead_code)]
     fn invalid_ids(&self) -> Vec<i64> {
         let mut invalids: Vec<i64> = vec![];
 
@@ -62,7 +60,6 @@ impl ProductRange {
         invalids
     }
 
-    #[allow(dead_code)]
     fn invalid_product_id(prod_id: i64) -> bool {
         let prod_id_str = prod_id.to_string();
         let length = prod_id_str.len();
@@ -100,7 +97,6 @@ impl TryFrom<String> for ProductRange {
 struct PartOneValue(i64);
 
 impl PartOneValue {
-    #[allow(dead_code)]
     fn get(&self) -> i64 {
         self.0
     }
