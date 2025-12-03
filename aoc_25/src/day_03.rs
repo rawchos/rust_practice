@@ -225,11 +225,7 @@ impl JoltageTracker {
             return 0;
         };
 
-        if let Ok(joltage) = string_representation.parse::<i64>() {
-            return joltage;
-        } else {
-            return 0;
-        }
+        string_representation.parse::<i64>().unwrap_or_default()
     }
 }
 
