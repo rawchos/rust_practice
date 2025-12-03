@@ -151,13 +151,8 @@ impl TryFrom<FileReader> for PartOneValue {
     type Error = crate::Error;
 
     fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
-        let mut input_lines = reader.read_lines()?;
-        let Some(raw_input) = input_lines.next() else {
-            return Ok(PartOneValue(0));
-        };
-
-        let first_line = raw_input?;
-        let lines: Vec<&str> = first_line.split(',').collect();
+        let input = reader.read_string()?;
+        let lines: Vec<&str> = input.split(',').collect();
 
         let product_ranges = lines
             .iter()
@@ -186,13 +181,8 @@ impl TryFrom<FileReader> for PartTwoValue {
     type Error = crate::Error;
 
     fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
-        let mut input_lines = reader.read_lines()?;
-        let Some(raw_input) = input_lines.next() else {
-            return Ok(PartTwoValue(0));
-        };
-
-        let first_line = raw_input?;
-        let lines: Vec<&str> = first_line.split(',').collect();
+        let input = reader.read_string()?;
+        let lines: Vec<&str> = input.split(',').collect();
 
         let product_ranges = lines
             .iter()

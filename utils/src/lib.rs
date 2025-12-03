@@ -5,10 +5,6 @@ use std::{
 
 pub struct FileReader(String);
 
-// Sometimes, the puzzle input is one large string on one line, rather than a string
-// per line. Let's get a convenience method for that.
-// ex: pub fn read_string(&self) -> io::Result<String>           (or something)
-
 impl FileReader {
     pub fn new(filepath: &str) -> Self {
         Self(String::from(filepath))
@@ -18,19 +14,21 @@ impl FileReader {
         let file = File::open(self.0.as_str())?;
         Ok(io::BufReader::new(file).lines())
     }
+
+    pub fn read_string(&self) -> io::Result<String> {
+        let file = File::open(self.0.as_str())?;
+        let Some(s) = io::BufReader::new(file).lines().next() else {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "No data found in file",
+            ));
+        };
+
+        Ok(s?)
+    }
 }
 
 pub struct StringUtils;
-/*
-let splittable_string = "123456789";
-    let sub_string: Vec<String> = splittable_string
-    .chars()
-    .collect::<Vec<char>>()
-    .chunks(4)
-    .map(|chunk| chunk.iter().collect())
-    .collect();
-    println!("Splittable String: {:?}", sub_string);
- */
 
 impl StringUtils {
     pub fn partition_by(s: String, sub_length: usize) -> Vec<String> {
@@ -76,6 +74,16 @@ mod tests {
         assert_eq!(
             String::from("pqr3stu8vwx"),
             file_reader.read_lines().unwrap().nth(1).unwrap().unwrap()
+        )
+    }
+
+    #[test]
+    fn test_read_string() {
+        let file_reader = FileReader::new("../test-resources/sample_file_one_line.txt");
+
+        assert_eq!(
+            String::from("File containing all data on first line."),
+            file_reader.read_string().unwrap(),
         )
     }
 
