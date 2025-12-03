@@ -1,7 +1,12 @@
+use once_cell::sync::Lazy;
+use regex::Regex;
 use std::ops::Deref;
 use utils::FileReader;
 
 static DAY_01_FILE: &str = "./resources/aoc_25/day_01.txt";
+static ROTATION_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?<direction>[LR])(?<distance>\d+)").expect("Expected a valid regex")
+});
 
 pub struct Day01Processor(String);
 
@@ -76,9 +81,7 @@ impl TryFrom<String> for Rotation {
     type Error = crate::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let re = regex::Regex::new(r"(?<direction>[LR])(?<distance>\d+)")?;
-
-        let Some(rotation_data) = re.captures(&value) else {
+        let Some(rotation_data) = ROTATION_RE.captures(&value) else {
             return Err(Self::Error::InvalidInput);
         };
 
