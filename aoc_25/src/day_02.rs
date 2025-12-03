@@ -158,11 +158,7 @@ impl TryFrom<FileReader> for PartOneValue {
             .iter()
             .map(|s| ProductRange::try_from(s.to_string()))
             .collect::<Result<Vec<ProductRange>, crate::Error>>()?;
-        let total = product_ranges
-            .iter()
-            .map(|pr| pr.invalid_ids())
-            .flatten()
-            .sum();
+        let total = product_ranges.iter().flat_map(|pr| pr.invalid_ids()).sum();
 
         Ok(PartOneValue(total))
     }
@@ -190,8 +186,7 @@ impl TryFrom<FileReader> for PartTwoValue {
             .collect::<Result<Vec<ProductRange>, crate::Error>>()?;
         let total = product_ranges
             .iter()
-            .map(|pr| pr.advanced_invalid_ids())
-            .flatten()
+            .flat_map(|pr| pr.advanced_invalid_ids())
             .sum();
 
         Ok(PartTwoValue(total))

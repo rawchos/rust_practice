@@ -17,14 +17,14 @@ impl FileReader {
 
     pub fn read_string(&self) -> io::Result<String> {
         let file = File::open(self.0.as_str())?;
-        let Some(s) = io::BufReader::new(file).lines().next() else {
+        let Some(first_line) = io::BufReader::new(file).lines().next() else {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "No data found in file",
             ));
         };
 
-        Ok(s?)
+        first_line
     }
 }
 
@@ -52,8 +52,8 @@ impl StringUtils {
         }
 
         let first_string = &parts[0];
-        for idx in 1..parts.len() {
-            if parts[idx] != *first_string {
+        for item in parts.iter().skip(1) {
+            if item != first_string {
                 return false;
             }
         }
