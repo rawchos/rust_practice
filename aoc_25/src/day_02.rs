@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
-use utils::FileReader;
+use utils::{FileReader, StringUtils};
 
 static DAY_02_FILE: &str = "./resources/aoc_25/day_02.txt";
 static PRODUCT_RANGE_RE: Lazy<Regex> =
@@ -14,7 +14,8 @@ impl Day02Processor {
     }
 
     pub fn process(&self) {
-        PartOneProcessor::new(self.0.as_str()).process()
+        PartOneProcessor::new(self.0.as_str()).process();
+        PartTwoProcessor::new(self.0.as_str()).process();
     }
 }
 
@@ -37,6 +38,23 @@ impl PartOneProcessor {
         match PartOneValue::try_from(file_reader) {
             Ok(p1_value) => println!("AoC 25 Day 02 Part 1: {}", p1_value.get()),
             Err(msg) => println!("AoC 25 Day 02 Part 1: Failed with message: {}", msg),
+        }
+    }
+}
+
+struct PartTwoProcessor(String);
+
+impl PartTwoProcessor {
+    fn new(s: &str) -> Self {
+        Self(s.to_string())
+    }
+
+    fn process(&self) {
+        let file_reader = FileReader::new(&self.0);
+
+        match PartTwoValue::try_from(file_reader) {
+            Ok(p2_value) => println!("AoC 25 Day 02 Part 2: {}", p2_value.get()),
+            Err(msg) => println!("AoC 25 Day 02 Part 2: Failed with message: {}", msg),
         }
     }
 }
@@ -72,6 +90,33 @@ impl ProductRange {
         let midpoint = length / 2;
         if prod_id_str[0..midpoint] == prod_id_str[midpoint..length] {
             return true;
+        }
+
+        false
+    }
+
+    fn advanced_invalid_ids(&self) -> Vec<i64> {
+        let mut invalids: Vec<i64> = vec![];
+
+        for prod_id in self.start_id..self.end_id + 1 {
+            if ProductRange::advanced_invalid_product_id(prod_id) {
+                invalids.push(prod_id)
+            }
+        }
+
+        invalids
+    }
+
+    fn advanced_invalid_product_id(prod_id: i64) -> bool {
+        let prod_id_str = prod_id.to_string();
+        let midpoint = prod_id_str.len() / 2;
+
+        for sub_length in 1..midpoint + 1 {
+            let partitions: Vec<String> =
+                StringUtils::partition_by(prod_id_str.clone(), sub_length);
+            if StringUtils::all_equal(partitions) {
+                return true;
+            }
         }
 
         false
@@ -128,6 +173,41 @@ impl TryFrom<FileReader> for PartOneValue {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct PartTwoValue(i64);
+
+impl PartTwoValue {
+    fn get(&self) -> i64 {
+        self.0
+    }
+}
+
+impl TryFrom<FileReader> for PartTwoValue {
+    type Error = crate::Error;
+
+    fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
+        let mut input_lines = reader.read_lines()?;
+        let Some(raw_input) = input_lines.next() else {
+            return Ok(PartTwoValue(0));
+        };
+
+        let first_line = raw_input?;
+        let lines: Vec<&str> = first_line.split(',').collect();
+
+        let product_ranges = lines
+            .iter()
+            .map(|s| ProductRange::try_from(s.to_string()))
+            .collect::<Result<Vec<ProductRange>, crate::Error>>()?;
+        let total = product_ranges
+            .iter()
+            .map(|pr| pr.advanced_invalid_ids())
+            .flatten()
+            .sum();
+
+        Ok(PartTwoValue(total))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn product_range_from_string() {
+    fn test_product_range_from_string() {
         let expected = ProductRange {
             start_id: 11,
             end_id: 22,
@@ -153,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_product_id() {
+    fn test_invalid_product_id() {
         assert!(ProductRange::invalid_product_id(11));
         assert!(!ProductRange::invalid_product_id(12));
         assert!(!ProductRange::invalid_product_id(111));
@@ -161,7 +241,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_ids() {
+    fn test_invalid_ids() {
         let product_range = ProductRange {
             start_id: 11,
             end_id: 22,
@@ -179,9 +259,47 @@ mod tests {
     }
 
     #[test]
-    fn sum_invalid_product_ids() {
+    fn test_sum_invalid_product_ids() {
         let reader = FileReader::new(SAMPLE_FILE);
 
         assert_eq!(1227775554, PartOneValue::try_from(reader).unwrap().get())
+    }
+
+    #[test]
+    fn test_advanced_invalid_product_id() {
+        // Invalids
+        assert!(ProductRange::advanced_invalid_product_id(111111111));
+        assert!(ProductRange::advanced_invalid_product_id(123123123));
+        assert!(ProductRange::advanced_invalid_product_id(12341234));
+
+        // Valids
+        assert!(!ProductRange::advanced_invalid_product_id(1231231234));
+        assert!(!ProductRange::advanced_invalid_product_id(123456789));
+        assert!(!ProductRange::advanced_invalid_product_id(12111111));
+    }
+
+    #[test]
+    fn test_advanced_invalid_ids() {
+        let product_range = ProductRange {
+            start_id: 11,
+            end_id: 22,
+        };
+        let expected = vec![11, 22];
+
+        let product_range2 = ProductRange {
+            start_id: 95,
+            end_id: 112,
+        };
+        let expected2 = vec![99, 111];
+
+        assert_eq!(expected, product_range.advanced_invalid_ids());
+        assert_eq!(expected2, product_range2.advanced_invalid_ids());
+    }
+
+    #[test]
+    fn test_sum_advanced_invalid_product_ids() {
+        let reader = FileReader::new(SAMPLE_FILE);
+
+        assert_eq!(4174379265, PartTwoValue::try_from(reader).unwrap().get())
     }
 }
