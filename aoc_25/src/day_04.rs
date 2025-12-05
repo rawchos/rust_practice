@@ -10,7 +10,8 @@ impl Day04Processor {
     }
 
     pub fn process(&self) {
-        self.process_part1()
+        self.process_part1();
+        self.process_part2();
     }
 
     fn process_part1(&self) {
@@ -19,6 +20,15 @@ impl Day04Processor {
         match PaperRollGrid::try_from(file_reader) {
             Ok(grid) => println!("AoC 25 Day 04 Part 1: {}", grid.removable_rolls()),
             Err(msg) => println!("AoC 25 Day 04 Part 1: Failed with message: {}", msg),
+        }
+    }
+
+    fn process_part2(&self) {
+        let file_reader = FileReader::new(&self.0);
+
+        match PaperRollGrid::try_from(file_reader) {
+            Ok(mut grid) => println!("AoC 25 Day 04 Part 2: {}", grid.remove_all()),
+            Err(msg) => println!("AoC 25 Day 04 Part 2: Failed with message: {}", msg),
         }
     }
 }
@@ -60,10 +70,40 @@ impl PaperRollGrid {
         )
     }
 
+    // Makes multiple passes through the paper rolls, removing any removable rolls each pass.
+    // Returns the total number of rolls removed after no more rolls can be removed.
+    fn remove_all(&mut self) -> i64 {
+        let mut removed_rolls: i64 = 0;
+
+        loop {
+            let mut removable_rolls: Vec<Position> = vec![];
+
+            // For simplicity sake, we can skip the first and last
+            // rows of the grid since they're buffer rows.
+            for row in 1..self.buffered_grid.len() {
+                for column in 1..self.buffered_grid[row].len() {
+                    let this_position = Position(row, column);
+                    if self.buffered_grid[row][column] == PaperRollGrid::PAPER_ROLL
+                        && self.is_removable(this_position)
+                    {
+                        removable_rolls.push(this_position);
+                    }
+                }
+            }
+
+            if removable_rolls.is_empty() {
+                return removed_rolls;
+            } else {
+                removed_rolls += removable_rolls.len() as i64;
+                self.remove_rolls(removable_rolls);
+            }
+        }
+    }
+
     fn removable_rolls(&self) -> i64 {
         let mut removable_rolls: i64 = 0;
 
-        // For simple sake, we can skip the first and last
+        // For simplicity sake, we can skip the first and last
         // rows of the grid since they're buffer rows.
         for row in 1..self.buffered_grid.len() {
             for column in 1..self.buffered_grid[row].len() {
@@ -76,6 +116,13 @@ impl PaperRollGrid {
         }
 
         removable_rolls
+    }
+
+    // Removes rolls by placing an 'X' at each specified position
+    fn remove_rolls(&mut self, roll_positions: Vec<Position>) {
+        for roll in roll_positions {
+            self.buffered_grid[roll.row()][roll.column()] = 'X';
+        }
     }
 
     fn is_removable(&self, position: Position) -> bool {
@@ -127,6 +174,7 @@ impl TryFrom<FileReader> for PaperRollGrid {
     }
 }
 
+#[derive(Copy, Clone)]
 struct Position(usize, usize);
 
 impl Position {
@@ -215,5 +263,13 @@ mod tests {
         let grid = PaperRollGrid::try_from(reader).unwrap();
 
         assert_eq!(13, grid.removable_rolls());
+    }
+
+    #[test]
+    fn test_remove_all() {
+        let reader = FileReader::new(SAMPLE_FILE);
+        let mut grid = PaperRollGrid::try_from(reader).unwrap();
+
+        assert_eq!(43, grid.remove_all());
     }
 }
