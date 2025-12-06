@@ -42,6 +42,7 @@ impl PartOneProcessor {
     }
 }
 
+#[allow(dead_code)]
 struct PartTwoProcessor(String);
 
 impl PartTwoProcessor {
@@ -50,12 +51,16 @@ impl PartTwoProcessor {
     }
 
     fn process(&self) {
+        // This takes a long time to run so commenting out unless actually needed
+        /*
         let file_reader = FileReader::new(&self.0);
 
         match PartTwoValue::try_from(file_reader) {
             Ok(p2_value) => println!("AoC 25 Day 02 Part 2: {}", p2_value.get()),
             Err(msg) => println!("AoC 25 Day 02 Part 2: Failed with message: {}", msg),
         }
+        */
+        println!("AoC 25 Day 02 Part 2: Skipped")
     }
 }
 
@@ -167,6 +172,7 @@ impl TryFrom<FileReader> for PartOneValue {
 #[derive(Debug, PartialEq)]
 struct PartTwoValue(i64);
 
+#[allow(dead_code)]
 impl PartTwoValue {
     fn get(&self) -> i64 {
         self.0

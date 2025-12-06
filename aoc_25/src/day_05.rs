@@ -19,14 +19,24 @@ impl Day05Processor {
 
     pub fn process(&self) {
         self.process_part1();
+        self.process_part2();
     }
 
     fn process_part1(&self) {
         let file_reader = FileReader::new(&self.0);
 
         match PartOneValue::try_from(file_reader) {
-            Ok(p1_value) => println!("AoC Day 05 Part 1: {}", p1_value.get()),
-            Err(msg) => println!("AoC Day 05 Part 2: Failed with message: {}", msg),
+            Ok(p1_value) => println!("AoC 25 Day 05 Part 1: {}", p1_value.get()),
+            Err(msg) => println!("AoC 25 Day 05 Part 1: Failed with message: {}", msg),
+        }
+    }
+
+    fn process_part2(&self) {
+        let file_reader = FileReader::new(&self.0);
+
+        match PartTwoValue::try_from(file_reader) {
+            Ok(p2_value) => println!("AoC 25 Day 05 Part 2: {}", p2_value.get()),
+            Err(msg) => println!("AoC 25 Day 05 Part 2: Failed with message: {}", msg),
         }
     }
 }
@@ -40,6 +50,14 @@ impl Default for Day05Processor {
 struct PartOneValue(i64);
 
 impl PartOneValue {
+    fn get(&self) -> i64 {
+        self.0
+    }
+}
+
+struct PartTwoValue(i64);
+
+impl PartTwoValue {
     fn get(&self) -> i64 {
         self.0
     }
@@ -60,6 +78,36 @@ impl FreshIdRanges {
 
     fn is_fresh_id_range(possible_range: String) -> bool {
         FRESH_ID_RANGE_RE.is_match(&possible_range)
+    }
+
+    fn fresh_id_count(&self) -> i64 {
+        let mut ranges = self.0.clone();
+        ranges.sort_by(|a, b| a.start().cmp(b.start()));
+
+        let mut total: i64 = 0;
+        let mut current_end: i64 = 0;
+
+        for range in ranges {
+            let this_start = range.start().clone();
+            let this_end = range.end().clone();
+
+            if this_end <= current_end {
+                continue;
+            }
+
+            let start = if this_start <= current_end {
+                current_end + 1
+            } else {
+                this_start
+            };
+
+            let adjust_amount = this_end - start + 1;
+
+            total += adjust_amount;
+            current_end = this_end;
+        }
+
+        total
     }
 
     fn add_range(&mut self, range: String) {
@@ -91,25 +139,10 @@ impl FreshIdRanges {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
-struct IngredientIDs(Vec<i64>);
+struct IngredientIDs;
 
-#[allow(dead_code)]
 impl IngredientIDs {
-    #[allow(dead_code)]
-    fn new() -> Self {
-        Self(vec![])
-    }
-
-    #[allow(dead_code)]
-    fn add_ingredient(&mut self, ingredient_id: String) {
-        if let Ok(id) = ingredient_id.parse::<i64>() {
-            self.0.push(id);
-        }
-    }
-
-    #[allow(dead_code)]
     fn is_ingredient_id(possible_ingredient_id: String) -> bool {
         INGREDIENT_ID_RE.is_match(&possible_ingredient_id)
     }
@@ -126,17 +159,13 @@ impl TryFrom<FileReader> for PartOneValue {
 
         let mut fresh_ranges = FreshIdRanges::new();
         let mut fresh_ingredients: i64 = 0;
-        // let mut ingredients = IngredientIDs::new();
 
-        // Maybe switch these to references
         for input in input_lines.into_iter() {
             if FreshIdRanges::is_fresh_id_range(input.clone()) {
                 fresh_ranges.add_range(input.clone());
             } else if IngredientIDs::is_ingredient_id(input.clone()) {
-                // ingredients.add_ingredient(input);
                 if let Ok(ingredient) = input.parse::<i64>() {
                     if fresh_ranges.is_fresh_ingredient(ingredient) {
-                        // println!("Fresh Ingredient: {}", input);
                         fresh_ingredients += 1;
                     }
                 }
@@ -144,6 +173,27 @@ impl TryFrom<FileReader> for PartOneValue {
         }
 
         Ok(PartOneValue(fresh_ingredients))
+    }
+}
+
+impl TryFrom<FileReader> for PartTwoValue {
+    type Error = crate::Error;
+
+    fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
+        let input_lines = reader
+            .read_lines()?
+            .map_while(Result::ok)
+            .collect::<Vec<String>>();
+
+        let mut fresh_ranges = FreshIdRanges::new();
+
+        for input in input_lines.into_iter() {
+            if FreshIdRanges::is_fresh_id_range(input.clone()) {
+                fresh_ranges.add_range(input.clone());
+            }
+        }
+
+        Ok(PartTwoValue(fresh_ranges.fresh_id_count()))
     }
 }
 
@@ -203,5 +253,12 @@ mod tests {
         let reader = FileReader::new(SAMPLE_FILE);
 
         assert_eq!(3, PartOneValue::try_from(reader).unwrap().get());
+    }
+
+    #[test]
+    fn test_part_two_value_from_reader() {
+        let reader = FileReader::new(SAMPLE_FILE);
+
+        assert_eq!(14, PartTwoValue::try_from(reader).unwrap().get());
     }
 }
