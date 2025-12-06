@@ -88,23 +88,20 @@ impl FreshIdRanges {
         let mut current_end: i64 = 0;
 
         for range in ranges {
-            let this_start = range.start().clone();
-            let this_end = range.end().clone();
-
-            if this_end <= current_end {
+            if *range.end() <= current_end {
                 continue;
             }
 
-            let start = if this_start <= current_end {
+            let start = if *range.start() <= current_end {
                 current_end + 1
             } else {
-                this_start
+                *range.start()
             };
 
-            let adjust_amount = this_end - start + 1;
+            let adjust_amount = *range.end() - start + 1;
 
             total += adjust_amount;
-            current_end = this_end;
+            current_end = *range.end();
         }
 
         total
