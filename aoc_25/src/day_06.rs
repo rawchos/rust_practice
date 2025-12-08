@@ -135,15 +135,12 @@ impl TryFrom<Day06Input> for PartOneValue {
                 .map(|x| x.parse::<i64>())
                 .collect::<Result<Vec<i64>, std::num::ParseIntError>>()?;
 
-            let mut column: usize = 0;
-            for operation in operations.iter() {
+            for (column, operation) in operations.iter().enumerate() {
                 let value = vals[column];
                 match operation {
                     Operation::Add => accumulator.add_value(value, column),
                     Operation::Multiply => accumulator.multiply_value(value, column),
                 }
-
-                column += 1;
             }
         }
 
