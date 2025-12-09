@@ -1,6 +1,11 @@
+use once_cell::sync::Lazy;
+use regex::Regex;
+use std::ops::Range;
 use utils::FileReader;
 
 static DAY_06_FILE: &str = "./resources/aoc_25/day_06.txt";
+static OPERATIONS_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"[\\*\\+] *").expect("Expected a valid regex for operations"));
 
 pub struct Day06Processor(String);
 
@@ -11,6 +16,7 @@ impl Day06Processor {
 
     pub fn process(&self) {
         self.process_part1();
+        self.process_part2();
     }
 
     fn process_part1(&self) {
@@ -19,6 +25,15 @@ impl Day06Processor {
         match PartOneValue::try_from(reader) {
             Ok(p1_value) => println!("AoC 25 Day 06 Part 1: {}", p1_value.get()),
             Err(msg) => println!("AoC 25 Day 06 Part 1: Failed with message: {}", msg),
+        }
+    }
+
+    fn process_part2(&self) {
+        let reader = FileReader::new(&self.0);
+
+        match PartTwoValue::try_from(reader) {
+            Ok(p2_value) => println!("AoC 25 Day 06 Part 2: {}", p2_value.get()),
+            Err(msg) => println!("AoC 25 Day 06 Part 2: Failed with message: {}", msg),
         }
     }
 }
@@ -157,6 +172,84 @@ impl TryFrom<FileReader> for PartOneValue {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct RangedOperation {
+    operation: Operation,
+    range: Range<usize>,
+}
+
+#[derive(Debug, PartialEq)]
+struct PartTwoValue(i64);
+
+impl PartTwoValue {
+    fn get(&self) -> i64 {
+        self.0
+    }
+}
+
+impl TryFrom<Day06Input> for PartTwoValue {
+    type Error = crate::Error;
+
+    fn try_from(value: Day06Input) -> Result<Self, Self::Error> {
+        let worksheet_size = value.worksheet_lines[0].len();
+
+        // Create the ranged operations
+        let matches = OPERATIONS_RE
+            .find_iter(&value.operations)
+            .collect::<Vec<_>>();
+        let num_matches = matches.len();
+
+        let mut operations: Vec<RangedOperation> = vec![];
+        for (idx, op_match) in matches.iter().enumerate() {
+            let end = if idx == num_matches - 1 {
+                worksheet_size
+            } else {
+                op_match.end() - 1
+            };
+
+            let range = op_match.start()..end;
+            let operation = Operation::from(op_match.as_str().trim());
+
+            operations.push(RangedOperation { operation, range })
+        }
+
+        let mut columns: Vec<i64> = vec![];
+        for operation in operations {
+            let mut nums: Vec<i64> = vec![];
+
+            for idx in operation.range {
+                let mut digits: Vec<char> = vec![];
+                for line in value.worksheet_lines.clone() {
+                    if let Some(this_digit) = line.chars().nth(idx) {
+                        if this_digit != ' ' {
+                            digits.push(this_digit)
+                        }
+                    }
+                }
+                nums.push(digits.into_iter().collect::<String>().parse::<i64>()?);
+            }
+
+            if let Some(this_column) = match operation.operation {
+                Operation::Add => Some(nums.into_iter().sum()),
+                Operation::Multiply => nums.into_iter().reduce(|a, b| a * b),
+            } {
+                columns.push(this_column)
+            }
+        }
+
+        Ok(PartTwoValue(columns.into_iter().sum()))
+    }
+}
+
+impl TryFrom<FileReader> for PartTwoValue {
+    type Error = crate::Error;
+
+    fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
+        let input = Day06Input::try_from(reader)?;
+        Self::try_from(input)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -205,6 +298,27 @@ mod tests {
         assert_eq!(
             PartOneValue(4277556),
             PartOneValue::try_from(reader).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_part_two_value_from_input() {
+        let reader = FileReader::new(SAMPLE_FILE);
+        let input = Day06Input::try_from(reader).unwrap();
+
+        assert_eq!(
+            PartTwoValue(3263827),
+            PartTwoValue::try_from(input).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_part_two_value_from_reader() {
+        let reader = FileReader::new(SAMPLE_FILE);
+
+        assert_eq!(
+            PartTwoValue(3263827),
+            PartTwoValue::try_from(reader).unwrap()
         );
     }
 }
