@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{cmp::max, collections::HashSet};
 use utils::FileReader;
 
 static DAY_07_FILE: &str = "./resources/aoc_25/day_07.txt";
@@ -12,6 +12,7 @@ impl Day07Processor {
 
     pub fn process(&self) {
         self.process_part1();
+        self.process_part2();
     }
 
     fn process_part1(&self) {
@@ -20,6 +21,15 @@ impl Day07Processor {
         match PartOneValue::try_from(reader) {
             Ok(p1_value) => println!("AoC 25 Day 07 Part 1: {}", p1_value.get()),
             Err(msg) => println!("AoC 25 Day 07 Part 1: Failed with message: {}", msg),
+        }
+    }
+
+    fn process_part2(&self) {
+        let reader = FileReader::new(&self.0);
+
+        match PartTwoValue::try_from(reader) {
+            Ok(p2_value) => println!("AoC 25 Day 07 Part 2: {}", p2_value.get()),
+            Err(msg) => println!("AoC 25 Day 07 Part 2: Failed with message: {}", msg),
         }
     }
 }
@@ -47,18 +57,15 @@ impl TachyonManifold {
 
     // Determines the total number of splits from a bream traversal of the diagram.
     fn traversal_splits(&mut self) -> i64 {
-        // let mut tracker = BeamTracker::new(self.diagram[0].len());
         self.tracker.init(self.diagram[0].clone());
 
         for idx in 1..self.diagram.len() {
-            // self.traverse(idx, &tracker);
             self.traverse(idx);
         }
 
         self.tracker.splits
     }
 
-    // fn traverse(&self, row_idx: usize, tracker: &BeamTracker) {
     fn traverse(&mut self, row_idx: usize) {
         for (pos, value) in self.diagram[row_idx].clone().iter().enumerate() {
             if *value == '^' {
@@ -72,18 +79,14 @@ impl TachyonManifold {
 struct BeamTracker {
     splits: i64,
     right_index: usize,
-    // split_indexes: HashSet<usize>,
     traversal_indexes: HashSet<usize>,
-    // to_remove: HashSet<usize>,
 }
 
 impl BeamTracker {
     fn new(right_index: usize) -> Self {
         Self {
             splits: 0,
-            // split_indexes: HashSet::new(),
             traversal_indexes: HashSet::new(),
-            // to_remove: HashSet::new(),
             right_index,
         }
     }
@@ -116,6 +119,52 @@ impl BeamTracker {
             // Remove this index from the traversal tree.
             self.traversal_indexes.remove(&idx);
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct QuantumTachyonManifold {
+    diagram: Vec<Vec<char>>,
+}
+
+impl QuantumTachyonManifold {
+    fn create(input: Day07Input) -> Self {
+        Self {
+            diagram: input.lines,
+        }
+    }
+
+    fn build_grid(rows: usize, columns: usize) -> Vec<Vec<i64>> {
+        let cols = vec![0; columns];
+        vec![cols; rows]
+    }
+
+    // Returns the total number of paths across all timelines.
+    fn traverse_all(&mut self) -> i64 {
+        let mut grid =
+            QuantumTachyonManifold::build_grid(self.diagram.len(), self.diagram[0].len().clone());
+
+        for (row, line) in self.diagram.iter().enumerate() {
+            for (col, value) in line.iter().enumerate() {
+                if *value == 'S' {
+                    grid[row][col] = 1;
+                    continue;
+                }
+
+                if *value == '.' && row > 0 {
+                    grid[row][col] += grid[row - 1][col];
+                    continue;
+                }
+
+                if *value == '^' {
+                    for idx in [col - 1, col + 1] {
+                        grid[row][idx] = max(grid[row - 1][col] + grid[row][idx], grid[row][idx]);
+                    }
+                }
+            }
+        }
+
+        grid[grid.len() - 1].iter().sum()
     }
 }
 
@@ -158,6 +207,27 @@ impl TryFrom<FileReader> for PartOneValue {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct PartTwoValue(i64);
+
+impl PartTwoValue {
+    #[allow(dead_code)]
+    fn get(&self) -> i64 {
+        self.0
+    }
+}
+
+impl TryFrom<FileReader> for PartTwoValue {
+    type Error = crate::Error;
+
+    fn try_from(reader: FileReader) -> Result<Self, Self::Error> {
+        let input = Day07Input::try_from(reader)?;
+        let mut manifold = QuantumTachyonManifold::create(input);
+
+        Ok(Self(manifold.traverse_all()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,5 +251,13 @@ mod tests {
         let p1_value = PartOneValue::try_from(reader).unwrap();
 
         assert_eq!(21, p1_value.get())
+    }
+
+    #[test]
+    fn test_part_two_value_from_reader() {
+        let reader = FileReader::new(SAMPLE_FILE);
+        let p2_value = PartTwoValue::try_from(reader).unwrap();
+
+        assert_eq!(40, p2_value.get())
     }
 }
