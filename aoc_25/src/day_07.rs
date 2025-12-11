@@ -142,7 +142,7 @@ impl QuantumTachyonManifold {
     // Returns the total number of paths across all timelines.
     fn traverse_all(&mut self) -> i64 {
         let mut grid =
-            QuantumTachyonManifold::build_grid(self.diagram.len(), self.diagram[0].len().clone());
+            QuantumTachyonManifold::build_grid(self.diagram.len(), self.diagram[0].len());
 
         for (row, line) in self.diagram.iter().enumerate() {
             for (col, value) in line.iter().enumerate() {
