@@ -76,7 +76,7 @@ impl TryFrom<String> for Location {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialOrd)]
+#[derive(Clone, Copy, Debug)]
 struct Distance(f64);
 
 impl Distance {
@@ -115,6 +115,14 @@ impl Eq for Distance {}
 impl Hash for Distance {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.norm_bits().hash(state);
+    }
+}
+
+impl PartialOrd for Distance {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        // You can use the `partial_cmp` of the inner type (i32 in this case)
+        // or implement the logic manually.
+        Some(self.cmp(other))
     }
 }
 
@@ -183,7 +191,7 @@ impl PlaygroundDecoration {
 
         circuits
             .iter()
-            .sorted_by(|a, b| b.1.cmp(&a.1))
+            .sorted_by(|a, b| b.1.cmp(a.1))
             .take(3)
             .map(|(_, count)| count)
             .product()
