@@ -6,6 +6,7 @@ mod day_05;
 mod day_06;
 mod day_07;
 mod day_08;
+mod day_09;
 mod error;
 
 pub use error::Error;
@@ -18,6 +19,7 @@ use day_05::Day05Processor;
 use day_06::Day06Processor;
 use day_07::Day07Processor;
 use day_08::Day08Processor;
+use day_09::Day09Processor;
 
 pub struct AoC25Processor {}
 
@@ -31,5 +33,6 @@ impl AoC25Processor {
         Day06Processor::default().process();
         Day07Processor::default().process();
         Day08Processor::default().process();
+        Day09Processor::default().process();
     }
 }
