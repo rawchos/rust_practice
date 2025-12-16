@@ -55,11 +55,11 @@ struct Point(usize, usize);
 
 impl Point {
     fn row(&self) -> usize {
-        self.0
+        self.1
     }
 
     fn column(&self) -> usize {
-        self.1
+        self.0
     }
 
     fn area_between(&self, other: Point) -> i64 {
