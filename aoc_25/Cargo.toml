@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 utils = { path = "../utils" }
 
+disjoint = { workspace = true }
 itertools = { workspace = true }
 once_cell = { workspace = true }
 phf = { workspace = true }
