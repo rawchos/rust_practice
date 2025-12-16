@@ -18,6 +18,7 @@ impl Day08Processor {
 
     pub fn process(&self) {
         self.process_part1();
+        self.process_part2();
     }
 
     fn process_part1(&self) {
@@ -27,6 +28,15 @@ impl Day08Processor {
         match PlaygroundDecoration::try_from(reader) {
             Ok(pd) => println!("AoC 25 Day 08 Part 1: {}", pd.calculate_circuits(1000)),
             Err(msg) => println!("AoC 25 Day 08 Part 1: Failed with message: {}", msg),
+        }
+    }
+
+    fn process_part2(&self) {
+        let reader = FileReader::new(&self.0);
+
+        match PlaygroundDecoration::try_from(reader) {
+            Ok(pd) => println!("AoC 25 Day 08 Part 2: {}", pd.join_all()),
+            Err(msg) => println!("AoC 25 Day 08 Part 2: Failed with message: {}", msg),
         }
     }
 }
@@ -120,8 +130,6 @@ impl Hash for Distance {
 
 impl PartialOrd for Distance {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // You can use the `partial_cmp` of the inner type (i32 in this case)
-        // or implement the logic manually.
         Some(self.cmp(other))
     }
 }
@@ -196,6 +204,33 @@ impl PlaygroundDecoration {
             .map(|(_, count)| count)
             .product()
     }
+
+    fn join_all(&self) -> i64 {
+        let mut distances: BTreeMap<Distance, (usize, usize)> = BTreeMap::new();
+        let num_boxes = self.junction_boxes.len();
+
+        for i in 0..(num_boxes - 1) {
+            for j in (i + 1)..num_boxes {
+                let distance = self.junction_boxes[i]
+                    .location()
+                    .distance_from(self.junction_boxes[j].location());
+                distances.insert(distance, (i, j));
+            }
+        }
+
+        let mut boxes: DisjointSetVec<JunctionBox> =
+            DisjointSetVec::from(self.junction_boxes.clone());
+        let mut last_join: [(usize, usize); 1] = [(0, 1)];
+
+        for (_, (i, j)) in distances.iter() {
+            if boxes.join(*i, *j) {
+                last_join[0] = (*i, *j);
+            }
+        }
+
+        self.junction_boxes[last_join[0].0].location().x()
+            * self.junction_boxes[last_join[0].1].location().x()
+    }
 }
 
 impl TryFrom<FileReader> for PlaygroundDecoration {
@@ -256,5 +291,13 @@ mod tests {
         let playground_decoration = PlaygroundDecoration::try_from(reader).unwrap();
 
         assert_eq!(40, playground_decoration.calculate_circuits(10));
+    }
+
+    #[test]
+    fn test_join_all() {
+        let reader = FileReader::new(SAMPLE_FILE);
+        let playground_decoration = PlaygroundDecoration::try_from(reader).unwrap();
+
+        assert_eq!(25272, playground_decoration.join_all());
     }
 }
